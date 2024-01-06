@@ -1,0 +1,59 @@
+<div id="announcement">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-header-text">公告列表</span>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered table-hover">
+                <thead>
+                <tr>
+                    <th>编号</th>
+                    <th>标题</th>
+                    <th>内容</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr :key="announcement.id" v-for="announcement in announcements">
+                    <td>{{ announcement.id }}</td>
+                    <td>{{ announcement.title }}</td>
+                    <td>{{ announcement.content }}</td>
+                </tr>
+                </tbody>
+            </table>
+            <div>
+                共{{ page.totalRows }}条公告,{{ page.pageNow }}/{{ page.totalPage }}
+                <button :disabled="page.pageNow === 1" @click="loadPage(page.pageNow - 1)"
+                        class="btn btn-dark btn-rounded">上一页
+                </button>
+                <button :disabled="page.pageNow === page.totalPage" @click="loadPage(page.pageNow + 1)"
+                        class="btn btn-dark btn-rounded">下一页
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var announcement = new Vue({
+        el: '#announcement',
+        data: {
+            announcements: [],
+            page: {},
+        },
+        methods: {
+            loadPage(pageNow) {
+                fetch(`/announcementPagingServlet?pageNow=${pageNow}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        this.announcements = data.announcements;
+                        this.page = data.page;
+                    })
+                    .catch(error => {
+                        console.error('Failed to load page:', error);
+                    });
+            },
+        },
+        mounted() {
+            this.loadPage(1);
+        },
+    });
+</script>

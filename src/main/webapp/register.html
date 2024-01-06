@@ -1,0 +1,230 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>雇员管理系统</title>
+    <link href="plugins/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <script src="plugins/bootstrap/bootstrap.min.js"></script>
+    <script src="plugins/jquery-2.2.4.min.js"></script>
+    <script charset="UTF-8" src="plugins/city.js"></script>
+    <canvas class="fireworks" style="position:fixed;left:0;top:0;z-index:99999999;pointer-events:none;"></canvas>
+    <script src="plugins/fireworks.js" type="text/javascript"></script>
+    <script src="plugins/vue.js"></script>
+    <style>
+        body {
+            background-image: url("image/IMG_3938.JPG");
+            background-size: cover;
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+        }
+
+        .card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        td {
+            padding: 5px;
+            text-align: center;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        input[type="submit"] {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        input[type="submit"] {
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #0dcaf0;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+<div id="register">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-header-text" style="font-size: 20px">注册</span>
+        </div>
+        <div class="card-body">
+            <table>
+                <tr>
+                    <td>用户名：</td>
+                    <td><input name="username" type="text" v-model="formData.username">
+                        <span style="color: red">{{ formErrors.username }}</span></td>
+                </tr>
+                <tr>
+                    <td>密码：</td>
+                    <td><input name="password" type="password" v-model="formData.password">
+                        <span style="color: red">{{ formErrors.password }}</span></td>
+                </tr>
+                <tr>
+                    <td>邮箱：</td>
+                    <td><input name="email" type="text" v-model="formData.email">
+                        <span style="color: red">{{ formErrors.email }}</span></td>
+                </tr>
+                <tr>
+                    <td>省：</td>
+                    <td>
+                        <select @change="provinceChange" v-model="selectedProvince">
+                            <option :key="province.name" :value="province.name" v-for="province in provinces">
+                                {{ province.name }}
+                            </option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>市：</td>
+                    <td>
+                        <select @change="cityChange" v-model="selectedCity" :disabled="cities.length === 0">
+                            <option :key="city.name" :value="city.name" v-for="city in cities">{{ city.name }}
+                            </option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>区：</td>
+                    <td>
+                        <select v-model="selectedDistrict" :disabled="districts.length === 0">
+                            <option :key="district" :value="district" v-for="district in districts">{{ district }}
+                            </option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><input type="submit" value="注册" @click="submitForm"></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+    const register = new Vue({
+        el: '#register',
+        data: {
+            formData: {
+                username: '',
+                password: '',
+                email: '',
+            },
+            formErrors: {
+                username: '',
+                password: '',
+                email: '',
+            },
+            provinces: province,
+            cities: [],
+            districts: [],
+            selectedProvince: '',
+            selectedCity: '',
+            selectedDistrict: '',
+        },
+        methods: {
+            submitForm() {
+                if (this.checkForm()) {
+                    fetch('/registerServlet', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `username=${this.formData.username}&password=${this.formData.password}&email=${this.formData.email}`,
+                    }).then(response => response.text())
+                        .then(data => {
+                            alert('注册成功')
+                            window.location.href = 'login.html';
+                        }).catch(error => {
+                        console.error('Error registering:', error);
+                    })
+                }
+            },
+            usernameCheck() {
+                const nameRegex = /^[a-zA-Z0-9]+$/;
+                if (!nameRegex.test(this.formData.username)) {
+                    this.formErrors.username = "用户名只能由数字和字母组成";
+                    return;
+                } else {
+                    this.formErrors.username = "";
+                }
+                fetch(`/userExistServlet?username=${this.formData.username}`)
+                    .then(response => response.text())
+                    .then(data => {
+                        this.formErrors.username = data === "true" ? "用户名已存在" : "";
+                    })
+                    .catch(error => {
+                        console.error('Error checking username:', error);
+                    });
+            },
+            passwordCheck() {
+                const passwordRegex = /^[a-zA-Z0-9]{6,}$/;
+                this.formErrors.password = passwordRegex.test(this.formData.password) ? "" : "密码只能由数字和字母组成";
+            },
+            emailCheck() {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                this.formErrors.email = emailRegex.test(this.formData.email) ? "" : "邮箱格式不正确";
+            },
+            checkForm() {
+                this.usernameCheck();
+                this.passwordCheck();
+                this.emailCheck();
+                return this.formErrors.username === "" && this.formErrors.password === "" && this.formErrors.email === "";
+            },
+            provinceChange() {
+                this.cities = this.findCity(this.selectedProvince);
+                this.cityChange();
+            },
+            cityChange() {
+                this.districts = this.findDistrict(this.selectedCity);
+            },
+            findCity(provinceName) {
+                for (let i = 0; i < province.length; i++) {
+                    if (province[i].name === provinceName) {
+                        return province[i].city;
+                    }
+                }
+                return [];
+            },
+            findDistrict(cityName) {
+                for (let i = 0; i < province.length; i++) {
+                    for (let j = 0; j < province[i].city.length; j++) {
+                        if (province[i].city[j].name === cityName) {
+                            return province[i].city[j].districtAndCounty;
+                        }
+                    }
+                }
+                return [];
+            }
+        },
+        mounted() {
+            this.provinceChange();
+        },
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<div id="contact">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-header-text">通讯录</span>
+            <button @click="showNewUserDialog" class="btn btn-secondary btn-rounded float-right">新增</button>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered table-hover">
+                <thead>
+                <tr>
+                    <th>编号</th>
+                    <th>姓名</th>
+                    <th>密码</th>
+                    <th>邮箱</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr :key="user.id" v-for="user in users">
+                    <th scope="row">{{ user.id }}</th>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.password }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        <button @click="updateUser(user.id)" class="btn btn-success btn-rounded">更新</button>
+                        <a @click="deleteUser(user.id)" class="btn btn-danger btn-rounded">删除</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <div>
+                共{{ page.totalRows }}条记录,{{ page.pageNow }}/{{ page.totalPage }}
+                <button :disabled="page.pageNow === 1" @click="loadPage(page.pageNow - 1)"
+                        class="btn btn-dark btn-rounded">
+                    上一页
+                </button>
+                <button :disabled="page.pageNow === page.totalPage" @click="loadPage(page.pageNow + 1)"
+                        class="btn btn-dark btn-rounded">
+                    下一页
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var contact = new Vue({
+        el: '#contact',
+        data: {
+            users: [],
+            page: {
+                pageNow: 1,
+                pageSize: 10,
+                totalRows: 0,
+                totalPage: 0,
+            },
+            newUser: {
+                username: '',
+                password: '',
+                email: '',
+            },
+            userData: {
+                id: '',
+                username: '',
+                password: '',
+                email: '',
+            }
+        },
+        methods: {
+            showNewUserDialog() {
+                let newUserDialog = dialog({
+                    title: '新增用户',
+                    width: 180,
+                    content: `
+                        用户名：<input type="text" id="newUsername"><br>
+                        密码：<input type="password" id="newPassword"><br>
+                        邮箱：<input type="text" id="newEmail"><br>`,
+                    cancelValue: '取消',
+                    cancel: true,
+                    okValue: '提交',
+                    ok: function () {
+                        const newUsername = $('#newUsername').val();
+                        const newPassword = $('#newPassword').val();
+                        const newEmail = $('#newEmail').val();
+                        console.log(newUsername, newPassword, newEmail)
+                        fetch('/registerServlet', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: `username=${newUsername}&password=${newPassword}&email=${newEmail}`,
+                        }).then(response => response.text())
+                            .then(data => {
+                                alert('提交成功');
+                                contact.loadPage(contact.page.pageNow);
+                            })
+                    }
+                });
+                newUserDialog.showModal();
+            },
+            updateUser(userId) {
+                fetch(`/findUserId?id=${userId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        this.userData = data;
+                        this.showUpdateUserDialog();
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            },
+            showUpdateUserDialog() {
+                let updateUserDialog = dialog({
+                    title: '更新用户',
+                    width: 180,
+                    content: `
+                        用户名：<input type="text" id="updateUsername" value="${contact.userData.username}"><br>
+                        密码：<input type="password" id="updatePassword" value="${contact.userData.password}"><br>
+                        邮箱：<input type="text" id="updateEmail" value="${contact.userData.email}"><br>`,
+                    cancelValue: '取消',
+                    cancel: true,
+                    okValue: '提交',
+                    ok: function () {
+                        const updateUsername = $('#updateUsername').val();
+                        const updatePassword = $('#updatePassword').val();
+                        const updateEmail = $('#updateEmail').val();
+                        fetch(`/updateUserServlet`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: `id=${contact.userData.id}&username=${updateUsername}&password=${updatePassword}&email=${updateEmail}`,
+                        })
+                            .then(response => response.text())
+                            .then(data => {
+                                alert('提交成功');
+                                contact.loadPage(contact.page.pageNow);
+                            })
+                    }
+                });
+                updateUserDialog.showModal();
+            },
+            deleteUser(userId) {
+                if (confirm('确定删除这条信息？')) {
+                    fetch(`/deleteUserById?id=${userId}`)
+                        .then(response => response.text())
+                        .then(data => {
+                            this.loadPage(contact.page.pageNow);
+                        })
+                }
+            },
+            loadPage(pageNow) {
+                fetch(`/userPaging?pageNow=${pageNow}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        this.users = data.users;
+                        this.page = data.page;
+                    })
+                    .catch(error => {
+                        console.error('Failed to load page:', error);
+                    });
+            }
+        },
+        mounted() {
+            this.loadPage(1);
+        }
+    });
+</script>

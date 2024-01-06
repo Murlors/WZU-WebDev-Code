@@ -1,0 +1,171 @@
+<style>
+    .header {
+        text-align: right;
+        margin-bottom: 10px;
+    }
+</style>
+<div id="email">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-header-text">邮件列表</span>
+            <button @click="writeEmail" class="btn btn-secondary btn-rounded float-right">写邮件</button>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered table-hover">
+                <thead>
+                <tr>
+                    <th>发件人</th>
+                    <th>收件人</th>
+                    <th>主题</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr :key="email.id" v-for="email in emails">
+                    <td>{{ email.senderName }}</td>
+                    <td>{{ email.recipientName }}</td>
+                    <td>{{ email.subject }}</td>
+                    <td>
+                        <a @click="viewEmail(email.content)" class="btn btn-success btn-rounded" href="#">查看</a>
+                        <button v-if="email.attachmentId !== 0" @click="downloadAttachment(email.attachmentId)"
+                                class="btn btn-primary btn-rounded">下载附件
+                        </button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <div>共{{ page.totalRows }}条记录,{{ page.pageNow }}/{{ page.totalPage }}
+                <button :disabled="page.pageNow === 1" @click="loadPage(page.pageNow - 1)"
+                        class="btn btn-dark btn-rounded">
+                    上一页
+                </button>
+                <button :disabled="page.pageNow === page.totalPage" @click="loadPage(page.pageNow + 1)"
+                        class="btn btn-dark btn-rounded">
+                    下一页
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var email = new Vue({
+        el: '#email',
+        data: {
+            emails: [],
+            page: {},
+            username: '',
+            attachment: null,
+        },
+        methods: {
+            writeEmail() {
+                let writeEmaildialog = dialog({
+                    title: '发送邮件',
+                    width: 180,
+                    content: `
+                        收件人：<input type="text" id="newRecipient"><br>
+                        主题：<input type="text" id="newSubject"><br>
+                        内容：<input type="text" id="newContent"><br><br>
+                        <label class="btn btn-rounded btn-secondary" for="newAttachment">选择附件</label>
+                        <input id="newAttachment" type="file"><br>
+                        <span id="selectedFileName"></span>`,
+                    cancelValue: '取消',
+                    cancel: true,
+                    okValue: '发送',
+                    ok: function () {
+                        let newRecipient = $('#newRecipient').val();
+                        let newSubject = $('#newSubject').val();
+                        let newContent = $('#newContent').val();
+                        this.attachment = document.getElementById('newAttachment').files[0];
+                        if (this.attachment) {
+                            let formData = new FormData();
+                            formData.append('attachment', this.attachment);
+                            fetch(`/uploadAttachment?sender_username=${email.username}`, {
+                                method: 'POST',
+                                body: formData,
+                            })
+                                .then(response => response.text())
+                                .then(attachment_id => {
+                                    console.log(attachment_id);
+                                    if (attachment_id === 'error') {
+                                        alert('上传附件失败');
+                                        return;
+                                    }
+                                    fetch('/sendEmailServlet', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/x-www-form-urlencoded',
+                                        },
+                                        body: `sender=${email.username}&recipient=${newRecipient}&subject=${newSubject}&content=${newContent}&attachment_id=${attachment_id}`,
+                                    })
+                                        .then(response => response.text())
+                                        .then(data => {
+                                            alert('发送成功');
+                                            email.loadPage(email.page.pageNow);
+                                        })
+                                })
+                        } else {
+                            fetch('/sendEmailServlet', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                },
+                                body: `sender=${email.username}&recipient=${newRecipient}&subject=${newSubject}&content=${newContent}`,
+                            })
+                                .then(response => response.text())
+                                .then(data => {
+                                    alert('发送成功');
+                                    email.loadPage(email.page.pageNow);
+                                })
+                        }
+                    }
+                });
+                writeEmaildialog.showModal();
+                $("#newAttachment").change(function (event) {
+                    const input = event.target;
+                    const fileNameDisplay = document.getElementById('selectedFileName');
+
+                    if (input.files && input.files.length > 0) {
+                        const fileName = input.files[0].name;
+                        fileNameDisplay.textContent = `Selected File: ${fileName}`;
+                    } else {
+                        fileNameDisplay.textContent = '';
+                    }
+                });
+            },
+            viewEmail(content) {
+                let d = dialog({
+                    title: '查看邮件',
+                    content: `<h3>${content}</h3>`,
+                    okValue: '确定',
+                    ok: function () {
+                    }
+                });
+                d.showModal();
+            },
+            loadPage(pageNow) {
+                fetch(`/emailPagingServlet?pageNow=${pageNow}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        this.emails = data.emails;
+                        this.page = data.page;
+                    })
+                    .catch(error => {
+                        console.error('Failed to load page:', error);
+                    });
+            },
+            downloadAttachment(attachmentId) {
+                window.location.href = `/getAttachment?attachment_id=${attachmentId}`;
+            },
+        },
+        mounted() {
+            this.loadPage(1);
+            let cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].trim();
+                if (cookie.startsWith('username=')) {
+                    this.username = cookie.substring('username='.length, cookie.length);
+                }
+            }
+        },
+    });
+</script>

@@ -1,0 +1,175 @@
+<style>
+    .personal_table_th {
+        background-color: #f2f2f2;
+        padding: 8px;
+    }
+
+    .personal_table_td, .personal_table_th {
+        border-collapse: separate;
+        border: 1px solid #ddd;
+        padding: 8px;
+    }
+
+    .profile-image {
+        width: 300px;
+        height: 300px;
+        border-radius: 5%;
+        margin-bottom: 10px;
+    }
+
+    .edit-button-img {
+        background-color: #4ba2d9;
+        color: white;
+        padding: 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-right: 20px;
+        font-weight: bold;
+    }
+
+    .edit-button-info {
+        background-color: #e56e6e;
+        color: white;
+        padding: 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+    }
+</style>
+
+<div id="userInfo">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-header-text">个人信息显示</span>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered">
+                <tr>
+                    <td class="personal_table_td" rowspan="6" width="50%">
+                        <img :src="previewImage" alt="头像" class="profile-image">
+                    </td>
+                    <th class="personal_table_th">编号</th>
+                    <td><input class="personal_table_td border rounded" disabled="disabled" v-model="user.id"></td>
+                </tr>
+                <tr>
+                    <th class="personal_table_th">用户名</th>
+                    <td><input class="personal_table_td border rounded" v-model="user.username"></td>
+                </tr>
+                <tr>
+                    <th class="personal_table_th">邮箱</th>
+                    <td><input class="personal_table_td border rounded" v-model="user.email"></td>
+                </tr>
+                <tr>
+                    <th class="personal_table_th">姓名</th>
+                    <td><input class="personal_table_td border rounded" v-model="user.name"></td>
+                </tr>
+                <tr>
+                    <th class="personal_table_th">年龄</th>
+                    <td><input class="personal_table_td border rounded" v-model="user.age"></td>
+                </tr>
+                <tr>
+                    <th class="personal_table_th">性别</th>
+                    <td><input class="personal_table_td border rounded" v-model="user.sex"></td>
+                </tr>
+                <tr>
+                    <td class="personal_table_td">
+                        <label class="btn btn-rounded edit-button-img" for="imageSelect">选择头像</label>
+                        <input @change="preImg" accept=".png,.jpg,.gif" id="imageSelect" type="file">
+                    </td>
+                    <td class="personal_table_td" colspan="2">
+                        <button @click="save" class="btn btn-rounded edit-button-info">保存修改</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+    var userInfo = new Vue({
+        el: '#userInfo',
+        data: {
+            user: {},
+            previewImage: '',
+        },
+        methods: {
+            getUserInfo() {
+                fetch('/getUserInfoServlet')
+                    .then(response => response.json())
+                    .then(data => {
+                        this.user = data;
+                        this.previewImage = "data:image/jpeg;base64," + data.picture;
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            },
+            preImg(event) {
+                let file = event.target.files[0];
+                if (file) {
+                    let reader = new FileReader();
+                    reader.onload = (e) => {
+                        let img = new Image();
+                        img.src = e.target.result;
+
+                        img.onload = () => {
+                            let canvas = document.createElement('canvas');
+                            let ctx = canvas.getContext('2d');
+
+                            canvas.width = 500;
+                            canvas.height = 500;
+
+                            let scale = Math.max(canvas.width / img.width, canvas.height / img.height);
+
+                            let width = img.width * scale;
+                            let height = img.height * scale;
+                            let offsetX = (canvas.width - width) / 2;
+                            let offsetY = (canvas.height - height) / 2;
+
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                            ctx.drawImage(img, offsetX, offsetY, width, height);
+
+                            this.previewImage = canvas.toDataURL('image/jpeg');
+                        };
+                    };
+                    reader.readAsDataURL(file);
+                }
+            },
+            save() {
+                let formData = new FormData();
+                formData.append('id', this.user.id);
+                formData.append('username', this.user.username);
+                formData.append('email', this.user.email);
+                formData.append('name', this.user.name);
+                formData.append('age', this.user.age);
+                formData.append('sex', this.user.sex);
+                formData.append('picture', this.dataURItoBlob(this.previewImage));
+
+                fetch('/uploadImageServlet', {
+                    method: 'POST',
+                    body: formData,
+                })
+                    .then(response => {
+                        alert('保存成功');
+                        this.getUserInfo();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            },
+            dataURItoBlob(dataURI) {
+                let byteString = atob(dataURI.split(',')[1]);
+                let ab = new ArrayBuffer(byteString.length);
+                let ia = new Uint8Array(ab);
+                for (let i = 0; i < byteString.length; i++) {
+                    ia[i] = byteString.charCodeAt(i);
+                }
+                return new Blob([ab], {type: 'image/jpeg'});
+            },
+        },
+        mounted() {
+            this.getUserInfo();
+        },
+    });
+</script>

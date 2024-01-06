@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>雇员管理系统</title>
+    <link href="plugins/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="plugins/artDialog/dialog.css" rel="stylesheet">
+    <script src="plugins/jquery-2.2.4.min.js"></script>
+    <script src="plugins/bootstrap/bootstrap.min.js"></script>
+    <script src="plugins/jquery.Jcrop.min.js"></script>
+    <script src="plugins/artDialog/dialog-plus.js"></script>
+    <canvas class="fireworks" style="position:fixed;left:0;top:0;z-index:99999999;pointer-events:none;"></canvas>
+    <script src="plugins/fireworks.js" type="text/javascript"></script>
+    <script src="plugins/vue.js"></script>
+</head>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+    }
+
+    #welcome_message {
+        position: absolute;
+        top: 20px;
+        right: 0;
+        padding: 10px;
+    }
+
+    .nav-pills .nav-item.show .nav-link,
+    .nav-pills .nav-link.active {
+        background-color: #007fff;
+        color: #fff;
+    }
+
+    .nav-pills .nav-link:hover {
+        /* hover 使用淡一点的颜色 如天蓝色 */
+        background-color: #6495ed;
+        color: #fff;
+    }
+
+    .card {
+        width: 90%;
+        border-collapse: collapse;
+        text-align: center;
+    }
+
+    .card-header {
+        background-color: #3498db;
+        color: white;
+    }
+
+    .float-right {
+        float: right;
+    }
+
+    .card-header-text {
+        font-size: 24px;
+        font-weight: bold;
+    }
+
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+    }
+
+    button {
+        margin: 0 5px;
+        font-size: 16px;
+    }
+
+    input[type="file"] {
+        display: none;
+    }
+</style>
+
+<body>
+<div id="welcome">
+    <div class="container-fluid">
+        <div class="jumbotron">
+            <h1>Murlors の CourseWork</h1>
+        </div>
+        <div class="row">
+            <nav class="col-md-2 d-none d-md-block sidebar">
+                <div class="sidebar-sticky p-3 border rounded">
+                    <ul class="nav nav-pills nav-tabs flex-column" role="tablist">
+                        <li class="nav-item">
+                            <a @click="showContent('section1')" class="nav-link section active">欢迎</a>
+                        </li>
+                        <li class="nav-item">
+                            <div>
+                                <a aria-controls="communicationSection" aria-expanded="false" class="nav-link"
+                                   data-bs-toggle="collapse"
+                                   href="#communicationSection" role="button">通讯管理</a>
+                            </div>
+                            <div class="collapse" id="communicationSection">
+                                <ul class="nav flex-column sub-menu">
+                                    <li class="nav-item">
+                                        <a @click="showContent('section2')" class="nav-link section">通讯录</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a @click="showContent('section3')" class="nav-link section">邮件箱</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <a @click="showContent('section4')" class="nav-link section">个人信息</a>
+                        </li>
+                        <li class="nav-item">
+                            <a @click="showContent('section5')" class="nav-link section">公司公告</a>
+                        </li>
+                    </ul>
+                    <div class="row">
+                        <div class="grid-margin stretch-card" style="margin-top: 25px">
+                            <div class="card">
+                                <div class="card-body">
+                                    <span class="card-title">Welcome!</span>
+                                    <span class="card-description">{{ username }}</span>
+                                    <br/>
+                                    <span class="card-description">当前在线人数:{{ applicationCount }}</span>
+                                    <br/>
+                                    <br/>
+                                    <a href="/logoutServlet" class="btn btn-primary btn-rounded btn-fw">退出登录</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-top my-3" style="margin-top: 20px">
+                        <p>© 2023 Murlors</p>
+                    </div>
+                </div>
+            </nav>
+            <main class="col-md-9 ml-sm-auto col-lg-10 px-4" role="main">
+                <div id="content">
+                    <img alt="欢迎" src="image/IMG_7392.JPG" width="100%">
+                </div>
+            </main>
+        </div>
+    </div>
+</div>
+<script>
+    new Vue({
+        el: '#welcome',
+        data: {
+            applicationCount: 0,
+            username: '',
+        },
+        methods: {
+            showContent(section) {
+                let contentDiv = $('#content');
+                let sections = $('.section');
+                let communicationSection = $('#communicationSection');
+                sections.removeClass('active');
+                switch (section) {
+                    case 'section1':
+                        sections.eq(0).addClass('active');
+                        communicationSection.collapse('hide');
+                        contentDiv.html('<img src="image/IMG_7392.JPG" width="100%" alt="欢迎">');
+                        break;
+                    case 'section2':
+                        sections.eq(1).addClass('active');
+                        this.loadSectionContent(section);
+                        break;
+                    case 'section3':
+                        sections.eq(2).addClass('active');
+                        this.loadSectionContent(section);
+                        break;
+                    case 'section4':
+                        sections.eq(3).addClass('active');
+                        communicationSection.collapse('hide');
+                        this.loadSectionContent(section);
+                        break;
+                    case 'section5':
+                        communicationSection.collapse('hide');
+                        sections.eq(4).addClass('active');
+                        this.loadSectionContent(section);
+                        break;
+                    default:
+                        contentDiv.html('<h2>Welcome</h2><p>Select a section from the left sidebar.</p>');
+                }
+            },
+            loadSectionContent(section) {
+                let url;
+                let contentDiv = $('#content')[0];
+                switch (section) {
+                    case 'section2':
+                        url = 'contact.html';
+                        break;
+                    case 'section3':
+                        url = 'email.html';
+                        break;
+                    case 'section4':
+                        url = 'userInfo.html';
+                        break;
+                    case 'section5':
+                        url = 'announcement.html';
+                        break;
+                    default:
+                        return;
+                }
+                fetch(url)
+                    .then(response => response.text())
+                    .then(html => {
+                        contentDiv.innerHTML = '';
+                        let wrapper = document.createElement('div');
+                        wrapper.innerHTML = html;
+                        contentDiv.appendChild(wrapper);
+                        contentDiv.querySelectorAll('script').forEach(script => {
+                            const newScript = document.createElement('script');
+                            newScript.textContent = script.textContent;
+                            contentDiv.appendChild(newScript);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error loading' + url + ':', error);
+                    });
+            },
+        },
+        mounted() {
+            fetch('/getInitialData')
+                .then(response => response.json())
+                .then(data => {
+                    this.applicationCount = data.applicationCount;
+                    this.username = data.username;
+                })
+                .catch(error => {
+                    console.error('Failed to load initial data:', error);
+                });
+        },
+    });
+</script>
+</body>
+
+</html>
