@@ -1,4 +1,4 @@
-# WebCourseWork
+# WZU-WebDev-Code
 
 > WZU Web Application Development CourseWork Code  
 > 温州大学 Web 应用开发课程大作业代码
