@@ -17,7 +17,7 @@ public class EncodingFilter implements Filter {
         HttpServletRequest httpServletRequest = (HttpServletRequest) servletRequest;
         HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
         String uri = httpServletRequest.getRequestURI();
-        if (uri.contains("/plugins/") || uri.contains("/image/") || uri.contains(".html")) {
+        if (uri.contains("/js/") || uri.contains("/image/") || uri.contains(".html")) {
             filterChain.doFilter(httpServletRequest, httpServletResponse);
             return;
         }

@@ -19,7 +19,7 @@ public class LoginFilter implements Filter {
         HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
 
         String uri = httpServletRequest.getRequestURI();
-        if (uri.contains("/plugins/") || uri.contains("/image/") || uri.contains("/userExistServlet") ||
+        if (uri.contains("/js/") || uri.contains("/image/") || uri.contains("/userExistServlet") ||
                 uri.contains("/register.html") || uri.contains("/registerServlet") || uri.contains("/login.html") ||
                 uri.contains("/captchaServlet") || uri.contains("/loginServlet")) {
             filterChain.doFilter(httpServletRequest, httpServletResponse);
